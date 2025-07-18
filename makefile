@@ -1,5 +1,5 @@
 chat_server: chat_server.c
-	gcc chat_server.c -o chat_server -lpthread
+	gcc chat_server.c -o chat_server -lpthread -lssl -lcrypto
 chat_client: chat_client.c
 	gcc chat_client.c -o chat_client -lpthread
 clean:
