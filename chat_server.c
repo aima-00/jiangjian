@@ -12,7 +12,34 @@
 
 int client_sockets[MAX_CLIENTS] = {0};
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+// 创建一个函数来处理客户端身份验证
+// 该函数会提示用户输入用户名和密码，并进行简单的验证
+// 返回值：1 表示验证成功，0 表示验证失败
+int authenticate_client(int client_socket) {
+    char buffer[BUFFER_SIZE];
+    char username[BUFFER_SIZE], password[BUFFER_SIZE];
 
+    // 发送用户名提示
+    send(client_socket, "Username: ", strlen("Username: "), 0);
+    int read_size = recv(client_socket, username, BUFFER_SIZE, 0);
+    if (read_size <= 0) return 0;
+    
+
+    // 发送密码提示
+    send(client_socket, "Password: ", strlen("Password: "), 0);
+    read_size = recv(client_socket, password, BUFFER_SIZE, 0);
+    if (read_size <= 0) return 0;
+    
+
+    // 简单验证逻辑（应替换为数据库或哈希校验）
+    if (strcmp(username, "admin") == 0 && strcmp(password, "secure123") == 0) {
+        send(client_socket, "Login successful\n", strlen("Login successful\n"), 0);
+        return 1;
+    } else {
+        send(client_socket, "Login failed\n", strlen("Login failed\n"), 0);
+        return 0;
+    }
+}
 void *handle_client(void *arg) {            // 创建一个线程处理客户端。后面可以增加参数用户名
     int client_socket = *(int *)arg;        // 客户端套接字 数组形式的
     char buffer[BUFFER_SIZE];               //客户端接收缓冲区
@@ -21,6 +48,12 @@ void *handle_client(void *arg) {            // 创建一个线程处理客户端
     //recv() 函数会从客户端接收数据，并将其存储到 buffer 中，最多接收 BUFFER_SIZE 字节的数据。
     //返回值是接受的字节数
     //
+    // 先进行身份验证
+    //如果身份验证失败，关闭套接字并退出线程
+     if (!authenticate_client(client_socket)) {
+        close(client_socket);
+        pthread_exit(NULL);
+    }
     while ((read_size = recv(client_socket, buffer, BUFFER_SIZE, 0))) {
         if (read_size <= 0) {       // 如果读取失败或客户端断开连接
             break;
